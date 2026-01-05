@@ -7,28 +7,33 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-latest  # Xcode 15 / Swift 6.2+ 确保兼容 ApplicationInspector
 
     steps:
+      # 1️⃣ 下载源码
       - name: Checkout source
         uses: actions/checkout@v4
 
+      # 2️⃣ 安装 Homebrew
       - name: Install Homebrew
         run: |
           echo | /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           echo "/opt/homebrew/bin" >> $GITHUB_PATH
 
-      - name: Install Tuist via Homebrew
+      # 3️⃣ 安装 Tuist CLI
+      - name: Install Tuist
         run: |
           brew tap tuist/tuist
           brew install tuist
 
+      # 4️⃣ 使用锁定依赖生成 Xcode 工程
       - name: Generate Xcode project
         run: |
           tuist install --no-update
-          tuist generate --no-binary-cache
+          tuist generate --no-update
 
-      - name: Build Cork.app
+      # 5️⃣ 编译 Cork.app
+      - name: Build Cork
         run: |
           xcodebuild \
             -workspace Cork.xcworkspace \
@@ -40,13 +45,15 @@ jobs:
             BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
             ONLY_ACTIVE_ARCH=NO
 
-      - name: Package as ZIP
+      # 6️⃣ 打包成 ZIP
+      - name: Package Cork.app as ZIP
         run: |
           mkdir -p output
           cd build/Build/Products/Release
           zip -r ../../../../output/Cork.zip Cork.app
 
-      - name: Upload ZIP
+      # 7️⃣ 上传 ZIP
+      - name: Upload Cork.zip
         uses: actions/upload-artifact@v4
         with:
           name: Cork.zip
